@@ -1,0 +1,112 @@
+.contain{ 
+    display: flex;
+    flex-direction: column;
+    margin:0 auto;
+    margin-left: 10px;
+    position:absolute;
+    top:10px;
+    bottom:10px;
+    width: calc(100% - 20px);
+    background-color: hsl(0, 0%, 97%);
+} 
+
+/* 设置了浏览器宽度不大于500px时 abc 显示100px宽度 */
+/* .contain{
+    width:50em;
+    height: 80%;
+    display: flex;
+} */
+.contain-up{
+    display: flex;
+    flex-direction: row;
+    flex: 9.5;
+}
+.contain-bottom{
+    display: flex;
+    flex-direction: column;
+    flex: 0.5;
+}
+.menu{
+    display: flex;
+    flex-direction: row;
+    flex: 2.3;
+    /* border: solid; */
+}
+.table{
+    display: flex;
+    flex-direction: row;
+    flex: 6.2;
+    /* border: solid; */
+}
+.mainmemory{
+    display: flex;
+    flex-direction: column;
+    flex: 1.5;
+    /* border: solid; */
+}
+.selectedmenu{
+    width: 80%;
+    height: 80%;
+    margin-left: 10%;
+    margin-top: 5%;
+    /* background-color: #fff; */
+    /* border-radius: 10px; */
+    /* border: 1px solid #ccc; */
+    /* box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.527); */
+}
+.processandsegment{
+    width: 80%;
+    /* height: 80%; */
+    margin-left: 0;
+    margin-top: 3%;
+    /* background-color: #fff; */
+    /* border-radius: 10px; */
+    /* border: 1px solid #ccc; */
+    /* box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.527); */
+}
+.segmenttable{
+    margin-top: 10%;
+    height: 30%;
+    background-color: #fff;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.527);
+
+}
+.pagetable{
+    width: 50%;
+    height: 80%;
+    margin-left: 10%;
+    margin-top: 3%;
+    background-color: #fff;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.527);
+}
+.memory-display{
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    height: 80%;
+    margin-left: 10%;
+    margin-top: 5%;
+    background-color: #fff;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.527);
+}
+.mylabel{
+    text-align: center;
+    font-size: 20px;
+}
+.nowcanusepage{
+    height: 65%;
+}
+.processtable{
+    height: 50%;
+    background-color: #fff;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.527);
+
+}

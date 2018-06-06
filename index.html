@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="css/elementUI.css">
+    <!-- 引入组件库 -->
+    <script src="js/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/ElementUI.js"></script>
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="css/index.css">
+    <!-- <script src="js/main.js" type="text/javascript" charset="utf-8"></script> -->
+</head>
+<body>
+    <div id="app">
+        <div class="contain">
+            <div class="contain-up">
+                <div class="menu">
+                    <div class="selectedmenu">
+                        <el-tabs v-model="activeName" @tab-click="handleClick">
+                            <el-tabs type="border-card">
+                                <el-tab-pane label="创建进程">
+                                    <div class="mylabel">创建进程</div>
+                                        <el-input placeholder="请输入内容" v-model="createprocessid" :disabled="true">
+                                            <template slot="prepend">进程id</template>
+                                        </el-input>
+                                    <div>
+                                        <div class="block">
+                                            <div class="mylabel">段数</div>
+                                            <el-slider v-model="createprocesssegment" :step="1" :min="1" :max="4">
+                                            </el-slider>
+                                        </div>
+                                        <div class="block">
+                                            <div class="mylabel">每个段大小</div>
+                                            <el-slider v-model="createprocesssegmentsize" :step="1" :min="1" :max="10">
+                                            </el-slider>
+                                        </div>
+                                    </div>
+                                    <div class="mylabel">内存总需求</div>
+                                    <div class="mylabel">内存申请</div>
+                                    <div style="margin-left: 30%;">
+                                        <el-button plain style="font-size: 30px;width: 60% ;" @click="createprocess">创建</el-button>
+                                    </div>
+                                </el-tab-pane>
+                                <el-tab-pane label="查找">
+                                    <el-input placeholder="请输入内容" v-model="input3">
+                                        <template slot="prepend">进程ID</template>
+                                    </el-input>
+                                    <el-input placeholder="请输入内容" v-model="input3">
+                                        <template slot="prepend">&nbsp;段&nbsp;号&nbsp;&nbsp;</template>
+                                    </el-input>
+                                    <el-input placeholder="请输入内容" v-model="input3">
+                                        <template slot="prepend">位置</template>
+                                    </el-input>
+                                    <el-button round style="margin-left: 20%;margin-top: 10%;font-size: 30px;width: 60% ;">查找</el-button>
+                                </el-tab-pane>
+                            </el-tabs>
+                        </el-tabs>
+
+                    </div>
+                </div>
+                <div class="table">
+                    <div class="processandsegment"> 
+                        <div class="mylabel">当前内存中进程</div>
+                        <div class="processtable">
+                            <el-table :data="processtable" height="100%">
+                                <el-table-column label="进程ID" width="90">
+                                    <template slot-scope="scope">
+                                        <i class="el-icon-time"></i>
+                                        <span style="margin-left: 10px">{{ scope.row.pid}}</span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="进程状态" width="150">
+                                    <template slot-scope="scope">
+                                        <el-popover trigger="hover" placement="top">
+        <!-- pid:processid, size: needpage, segmentlength: nowprocesssegmenttable.length, segmenttable: nowprocesssegmenttable, -->
+                                            <p>段数: {{ scope.row.segmentlength }}</p>
+                                            <p>进程大小: {{ scope.row.size }}</p>
+                                            <div slot="reference" class="name-wrapper">
+                                                <el-tag size="medium">{{ scope.row.state }}</el-tag>
+                                            </div>
+                                        </el-popover>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="操作">
+                                    <template slot-scope="scope">
+                                        <el-button size="mini" @click="looksegmentframe(scope.$index,scope.row)">查看段表</el-button>
+                                        <el-button size="mini" type="danger" @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+                        <div class="segmenttable">
+                            <div class="mylabel" >进程{{nowprocess.pid}}段表</div>
+                            <el-table :data="nowprocess.segmenttable" style="width: 100%" height="80%">
+                                <el-table-column prop="segmentnumber" label="段号" width="90">
+                                </el-table-column>
+                                <el-table-column prop="state" label="状态" width="90">
+                                </el-table-column>
+                                <el-table-column prop="pagetabalesize" label="页表大小">
+                                </el-table-column>
+                                <el-table-column prop="pagetableaddress" label="页表始地址">
+                                </el-table-column>
+                                <el-table-column fixed="right" label="查看页表" width="100">
+                                    <template slot-scope="scope">
+                                        <el-button @click="lookpagetable(scope.$index,scope.row)" type="text" size="small">查看</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+                    </div>
+                    <div class="pagetable">
+                        <div class="mylabel" >页表</div>
+                        <el-table :data="nowprocesspagetable" style="width: 95%" height="90%">
+                            <el-table-column prop="pagenumber" label="页号" width="90">
+                            </el-table-column>
+                            <el-table-column prop="state" label="状态" width="80">
+                            </el-table-column>
+                            <el-table-column prop="pageframenumber" label="页框号">
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                </div>
+                <div class="mainmemory">
+                    <div class="memory-display">
+                        <div class="mylabel">可用块:</div>
+                        <div style="text-align: center;">共{{usablepagenum}}个</div>
+                        <div class="nowcanusepage"style="height: 60%;">
+                            <el-table :data="mainmemory" style="width: 100%" height="88%">
+                                    <el-table-column  label="页号" width="70" @click="aaa(this)" >
+                                        <template scope="scope" v-if="!scope.row.hasdata">
+                                            {{ scope.row.pagenum}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column  label="地址" >
+                                        <template scope="scope" v-if="!scope.row.hasdata">
+                                            {{ scope.row.pageaddress}}
+                                        </template>
+                                    </el-table-column>
+                            </el-table>
+                        </div>
+                        <div class="mylabel">主存使用情况</div>
+                        <div style="margin-left: 15%">
+                            <el-progress type="circle" :percentage="100*(numberofpage-usablepagenum)/numberofpage" color="#8e71c7"></el-progress>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="contain-bottom">
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    var app = new Vue({
+        el:'#app',
+        data:function(){
+            return {
+                mainmemorysize: 128,
+                pagesize:2,
+                mainmemory:[],
+                residentset:4,
+                // segmenttable:[],
+                pagetableinmemory:[],//内存中所有程序的页表
+                pagetable:[],//每个进程每个段的页表
+                usablepagenum:0,
+                processtable:[],
+                numberofpage:0,
+                nowprocess:{
+                    pid:0,
+                    segmenttable:[],
+                },
+                switchalgorithm:1,
+                nowprocesspagetable:[],
+                createprocesssegment:0,
+                createprocesssegmentsize:0,
+                createprocessid:0,
+        }
+        },
+        mounted:function(){
+            
+            this.numberofpage  = this.mainmemorysize/this.pagesize
+            this.usablepagenum = this.numberofpage
+            for(let i = 0;i<this.numberofpage;i++){
+                let page={
+                    pagenum: i,
+                    pageaddress: i * this.pagesize,//页起始地址
+                    age: 0,
+                    hasdata: false,
+                }
+                let temp = Math.random()
+                if(temp>0.8){
+                    page.hasdata = true;
+                    this.usablepagenum = this.usablepagenum -1;
+                }
+                // this.page.pagenum=i,
+                // this.page.pageaddress=,//页起始地址
+                // this.page.age= 0,
+                // this.page.hasdata=false,
+                this.mainmemory.push(page)
+            }
+        },
+        methods:{
+            createprocess:function(){
+                let processid = this.createprocessid
+                let segmentnumber = this.createprocesssegment
+                let segmentsize= this.createprocesssegmentsize
+                //所需页数
+                let needpage = segmentnumber*segmentsize;
+                if(needpage>this.usablepagenum){
+                    // 页面置换
+                    if(this.switchalgorithm==1){
+                        fifo()
+                    }
+                    else{
+                        lru()
+                    }
+                }
+                else{
+                    let nowprocesssegmenttable = []
+                    let temp = []
+                    let number = 0;
+                    for (let i = 0; i < needpage; ) {
+                        if (this.mainmemory[number].hasdata == false) {
+                            this.mainmemory[number].hasdata = true
+                            temp.push(number)
+                            i = i+1
+                            this.usablepagenum = this.usablepagenum-1
+                        }
+                        number = number + 1
+                    }
+                    for(let i =0;i<segmentnumber;i++){
+                        let temppagetable = []
+                        for(let j = 0;j<segmentsize;j++){
+                            let temppagetableitem = {
+                                pagenumber:j,
+                                state:"good",
+                                pageframenumber:temp.pop()
+                            }
+                            temppagetable.push(temppagetableitem)
+                        }
+                        this.pagetableinmemory.push(temppagetable)
+                        let tempsegmenttable = {
+                            segmentnumber:i,
+                            state:"good",
+                            pagetabalesize:temppagetable.length,
+                            pagetableaddress: this.pagetableinmemory.length-1
+                        }
+                        nowprocesssegmenttable.push(tempsegmenttable)
+                    }
+                    let process = {
+                        pid:processid,
+                        size: segmentnumber * segmentsize,
+                        segmentlength: nowprocesssegmenttable.length,
+                        segmenttable: nowprocesssegmenttable,
+                        state:"run"
+                    }
+                    this.processtable.push(process)
+                    this.createprocessid = this.createprocessid+1
+                }
+            },
+            findprocess:function(){
+
+            },
+            deleteprocess:function(){
+
+            },
+            fifo:function(){
+
+            },
+            lru:function(){
+
+            },
+            looksegmentframe:function(index,row){
+                // console.log(index, row);
+                this.nowprocess.segmenttable = row.segmenttable
+                this.nowprocess.pid = row.pid
+            },
+            lookpagetable:function(index,row){
+                console.log(row);
+                this.nowprocesspagetable =this.pagetableinmemory[row.pagetableaddress]
+                console.log(this.pagetableinmemory);
+                
+            }
+        },
+    })
+</script>
+<style>
+
+</style>
+</html>
