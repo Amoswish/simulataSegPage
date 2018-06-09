@@ -6,15 +6,14 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <!-- 引入样式 -->
-    <link rel="stylesheet" href="css/elementUI.css">
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
     <!-- 引入组件库 -->
     <script src="js/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
-    <script src="js/ElementUI.js"></script>
+    <script src="element-ui/lib/index.js"></script>
     <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="css/index.css">
-    <!-- <script src="js/main.js" type="text/javascript" charset="utf-8"></script> -->
 </head>
 <body>
     <div id="app">
@@ -22,7 +21,7 @@
             <div class="contain-up">
                 <div class="menu">
                     <div class="selectedmenu">
-                        <el-tabs v-model="activeName" @tab-click="handleClick">
+                        <el-tabs v-model="activeName" @tab-click="">
                             <el-tabs type="border-card">
                                 <el-tab-pane label="创建进程">
                                     <div class="mylabel">创建进程</div>
@@ -48,16 +47,16 @@
                                     </div>
                                 </el-tab-pane>
                                 <el-tab-pane label="查找">
-                                    <el-input placeholder="请输入内容" v-model="input3">
+                                    <el-input placeholder="请输入内容" v-model="searchprocessid">
                                         <template slot="prepend">进程ID</template>
                                     </el-input>
-                                    <el-input placeholder="请输入内容" v-model="input3">
+                                    <el-input placeholder="请输入内容" v-model="searchprocesssegment">
                                         <template slot="prepend">&nbsp;段&nbsp;号&nbsp;&nbsp;</template>
                                     </el-input>
-                                    <el-input placeholder="请输入内容" v-model="input3">
-                                        <template slot="prepend">位置</template>
+                                    <el-input placeholder="请输入内容" v-model="searchprocessspage">
+                                        <template slot="prepend">offset</template>
                                     </el-input>
-                                    <el-button round style="margin-left: 20%;margin-top: 10%;font-size: 30px;width: 60% ;">查找</el-button>
+                                    <el-button round style="margin-left: 20%;margin-top: 10%;font-size: 30px;width: 60% ;" @click="locatapage">查找</el-button>
                                 </el-tab-pane>
                             </el-tabs>
                         </el-tabs>
@@ -90,17 +89,18 @@
                                 <el-table-column label="操作">
                                     <template slot-scope="scope">
                                         <el-button size="mini" @click="looksegmentframe(scope.$index,scope.row)">查看段表</el-button>
-                                        <el-button size="mini" type="danger" @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+                                        <el-button size="mini" type="danger" @click="deleteprocess(scope.$index, scope.row)">删除</el-button>
                                     </template>
                                 </el-table-column>
                             </el-table>
                         </div>
-                        <div class="segmenttable">
+                        <div class="segmenttable" v-if="">
                             <div class="mylabel" >进程{{nowprocess.pid}}段表</div>
                             <el-table :data="nowprocess.segmenttable" style="width: 100%" height="80%">
                                 <el-table-column prop="segmentnumber" label="段号" width="90">
                                 </el-table-column>
                                 <el-table-column prop="state" label="状态" width="90">
+                                    <div class="el-icon-success">sss</div>
                                 </el-table-column>
                                 <el-table-column prop="pagetabalesize" label="页表大小">
                                 </el-table-column>
@@ -117,11 +117,19 @@
                     <div class="pagetable">
                         <div class="mylabel" >页表</div>
                         <el-table :data="nowprocesspagetable" style="width: 95%" height="90%">
-                            <el-table-column prop="pagenumber" label="页号" width="90">
+                            <el-table-column prop="pagenumber" label="页号" width="72">
                             </el-table-column>
-                            <el-table-column prop="state" label="状态" width="80">
+                            <el-table-column prop="state" label="状态" width="72">
                             </el-table-column>
-                            <el-table-column prop="pageframenumber" label="页框号">
+                            <el-table-column  label="页框号"width="88" >
+                                <template scope="scope" v-if="scope.row.state=='in'">
+                                    {{ scope.row.pageframenumber}}
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="改变状态"width="100">
+                                <template scope="scope" v-if="scope.row.state=='in'">
+                                    <el-button size="mini" type="danger" @click="changepagestate(scope.$index, scope.row)">改变</el-button>
+                                </template>
                             </el-table-column>
                         </el-table>
                     </div>
@@ -165,7 +173,7 @@
                 mainmemorysize: 128,
                 pagesize:2,
                 mainmemory:[],
-                residentset:4,
+                residentset:8,
                 // segmenttable:[],
                 pagetableinmemory:[],//内存中所有程序的页表
                 pagetable:[],//每个进程每个段的页表
@@ -181,6 +189,10 @@
                 createprocesssegment:0,
                 createprocesssegmentsize:0,
                 createprocessid:0,
+                pageage:1,
+                searchprocessid:0,
+                searchprocesssegment:0,
+                searchprocessspage:0,
         }
         },
         mounted:function(){
@@ -193,10 +205,15 @@
                     pageaddress: i * this.pagesize,//页起始地址
                     age: 0,
                     hasdata: false,
+                    times:0,
+                    contain:-1//存放进程id
                 }
-                let temp = Math.random()
-                if(temp>0.8){
+                if(Math.random()>0.8){
                     page.hasdata = true;
+                    this.pageage  = (this.pageage + 1)/this.numberofpage
+                    page.age = Math.round(Math.random() * this.numberofpage)
+                    page.times = Math.round( Math.random() * this.numberofpage)
+
                     this.usablepagenum = this.usablepagenum -1;
                 }
                 // this.page.pagenum=i,
@@ -212,23 +229,29 @@
                 let segmentnumber = this.createprocesssegment
                 let segmentsize= this.createprocesssegmentsize
                 //所需页数
-                let needpage = segmentnumber*segmentsize;
+                let needpage = segmentnumber*segmentsize< this.residentset?segmentnumber * segmentsize:this.residentset
                 if(needpage>this.usablepagenum){
-                    // 页面置换
+                    // 页面置换         
                     if(this.switchalgorithm==1){
-                        fifo()
+                        this.fifo(needpage - this.usablepagenum)
                     }
                     else{
-                        lru()
+                        this.lru(needpage - this.usablepagenum)
                     }
+                    this.usablepagenum = needpage
                 }
-                else{
+                if (1){
                     let nowprocesssegmenttable = []
                     let temp = []
                     let number = 0;
-                    for (let i = 0; i < needpage; ) {
+                    let pageinmemory = needpage
+                    for (let i = 0; i < needpage;) {
                         if (this.mainmemory[number].hasdata == false) {
                             this.mainmemory[number].hasdata = true
+                            this.mainmemory[number].contain = processid
+                            this.pageage = (this.pageage + 1) / this.numberofpage
+                            this.mainmemory[number].age = Math.round(Math.random() * this.numberofpage)
+                            this.mainmemory[number].times = Math.round(Math.random() * this.numberofpage)
                             temp.push(number)
                             i = i+1
                             this.usablepagenum = this.usablepagenum-1
@@ -237,18 +260,27 @@
                     }
                     for(let i =0;i<segmentnumber;i++){
                         let temppagetable = []
+                        // 创建每个段的页表
                         for(let j = 0;j<segmentsize;j++){
                             let temppagetableitem = {
-                                pagenumber:j,
-                                state:"good",
-                                pageframenumber:temp.pop()
+                                processid: processid,
+                                pagenumber: j,
+                                state: "out",
+                                pageframenumber: null,
                             }
+                            if (pageinmemory > 0){
+                                temppagetableitem.state="in"
+                                temppagetableitem.pageframenumber=temp.pop()
+                                pageinmemory = pageinmemory -1
+                            }
+                            
                             temppagetable.push(temppagetableitem)
                         }
                         this.pagetableinmemory.push(temppagetable)
+                        //创建段表
                         let tempsegmenttable = {
                             segmentnumber:i,
-                            state:"good",
+                            state:"in",
                             pagetabalesize:temppagetable.length,
                             pagetableaddress: this.pagetableinmemory.length-1
                         }
@@ -265,17 +297,62 @@
                     this.createprocessid = this.createprocessid+1
                 }
             },
-            findprocess:function(){
-
+            deleteprocess:function(index, row){
+                console.log(row);
+                //删除每个段的页表并置空内存
+                for(let i = 0;i< row.segmenttable.length;i++){
+                    let temppagetable = this.pagetableinmemory[row.segmenttable[i].pagetableaddress]
+                    console.log(temppagetable);
+                    for (let j = 0; j < temppagetable.length; j++) {
+                        if(temppagetable[j].state=="in"){
+                            this.mainmemory[temppagetable[j].pageframenumber].contain = -1
+                            this.mainmemory[temppagetable[j].pageframenumber].hasdata = false
+                            this.usablepagenum = this.usablepagenum + 1
+                        }
+                    }
+                }
+                //删除段表
+                //删除进程
+                this.processtable.splice(index,1)
             },
-            deleteprocess:function(){
-
+            fifo:function(needreplacetimes){
+                // console.log(this.mainmemory);
+                let temparr = []
+                for (let j = 0; j < this.mainmemory.length; j++){
+                    if(temparr.length<needreplacetimes && this.mainmemory[j].hasdata ==true){
+                        temparr.push(this.mainmemory[j])
+                    }
+                    else if(temparr.length == needreplacetimes && this.mainmemory[j].hasdata == true){
+                        for(let i = 0;i<needreplacetimes;i++){
+                            if(temparr[i].age> this.mainmemory[j].age && this.mainmemory[i].hasdata == true){
+                                temparr[i] = this.mainmemory[j] 
+                                break
+                            }
+                        }
+                    }
+                }
+                // for(item in temparr){
+                //     console.log(temparr[item].pagenum);
+                // }
+                this.replacepage(temparr)
             },
-            fifo:function(){
-
-            },
-            lru:function(){
-
+            lru:function(needreplacetimes){
+                let temparr = []
+                for (let j = 0;j<this.mainmemory.length;j++) {
+                    if (temparr.length < needreplacetimes&& this.mainmemory[j].hasdata == true ){
+                        temparr.push(this.mainmemory[j])
+                    }
+                    else if(temparr.length == needreplacetimes && this.mainmemory[j].hasdata == true){
+                        for (let i = 0; i < needreplacetimes; i++) {
+                            if (temparr[i].times > this.mainmemory[j].times) {
+                                temparr[i] = this.mainmemory[j]
+                                 break
+                            }
+                        }
+                    }
+                }
+                
+                this.replacepage(temparr)
             },
             looksegmentframe:function(index,row){
                 // console.log(index, row);
@@ -285,9 +362,108 @@
             lookpagetable:function(index,row){
                 console.log(row);
                 this.nowprocesspagetable =this.pagetableinmemory[row.pagetableaddress]
-                console.log(this.pagetableinmemory);
+                console.log(this.mainmemory);
                 
-            }
+            },
+            replacepage:function(needreplacepage){
+                for (item in needreplacepage){
+                    //将当前元素置空
+                    this.mainmemory[item].hasdata = false
+                    this.mainmemory[item].contain = -1
+                    //将被置换元素的进程的页转化为不在内存中
+                    for(let item1 = 0;item1<this.pagetableinmemory.length;item1++){
+                        if(this.pagetableinmemory[item1][0].processid == needreplacepage[item].contain){
+                            for(let item2 = 0; item2< this.pagetableinmemory[item1].length;item2++){
+                                if(this.pagetableinmemory[item1][item2].pageframenumber == needreplacepage[item].pagenum){
+                                    this.pagetableinmemory[item1][item2].state = "out"
+                                    this.usablepagenum = this.usablepagenum +1
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            changepagestate:function(index,row){
+                if (row.state=="out") {
+                    //
+                }
+                else{
+                    //将存在内存里的进程换出
+                    // console.log(row);
+                    row.state = "out"
+                    this.mainmemory[row.pageframenumber].hasdata=false
+                    this.mainmemory[row.pageframenumber].contain = -1
+                    this.usablepagenum = this.usablepagenum + 1
+                }
+            },
+            locatapage:function(){
+                searchprocessid = this.searchprocessid
+                searchprocesssegment = this.searchprocesssegment
+                searchprocessspage=this.searchprocessspage
+                for(let i = 0;i< this.processtable.length;i++){
+                    if(this.processtable[i].pid == searchprocessid){
+                        for(let j = 0;j< this.processtable[i].segmenttable.length;j++){
+                            if(this.processtable[i].segmenttable[j].segmentnumber == searchprocesssegment){
+                                if(this.processtable[i].segmenttable[j].pagetabalesize>=searchprocessspage){
+                                    // console.log(this.processtable[i].segmenttable[j]);
+                                    temppagetable = this.pagetableinmemory[this.processtable[i].segmenttable[j].pagetableaddress]                    
+                                    for(let k=0;k<temppagetable.length;k++){
+                                        if(temppagetable[k].pagenumber== searchprocessspage){
+                                            // alert(temppagetable[k].pagenumber+ temppagetable[k].pageframenumber+ temppagetable[k].state)
+                                            const h = this.$createElement;
+                                            this.$message({
+                                                showClose: true,
+                                                message: h('p', null, [
+                                                    h('div', null, '该页在内存中位置'),
+                                                    h('i', { style: 'color: teal' }, temppagetable[k].pageframenumber),
+                                                    h('div', null, '该页状态'),
+                                                    h('i', { style: 'color: teal' }, temppagetable[k].state)
+                                                ])
+                                            });
+                                            return
+                                        }
+                                        else{
+                                            this.$message({
+                                                showClose: true,
+                                                message: '未找到，请重新输入',
+                                                type: 'error'
+                                            });
+                                        }
+                                    }
+                                }
+                                else{
+                                    this.$message({
+                                        showClose: true,
+                                        message: '该进程段里没有此页',
+                                        type: 'error'
+                                    });
+                                    alert("")
+                                }
+                            }
+                            else{
+                                this.$message({
+                                    showClose: true,
+                                    message: '该进程没有此段',
+                                    type: 'error'
+                                });
+                            }
+                        }
+                    }
+                    else{
+                        this.$message({
+                            showClose: true,
+                            message: '没有此进程2',
+                            type: 'error'
+                        });
+                    }
+                }
+                this.$message({
+                    showClose: true,
+                    message: '没有此进程',
+                    type: 'error'
+                });
+            },
         },
     })
 </script>
