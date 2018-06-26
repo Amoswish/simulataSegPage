@@ -18,10 +18,40 @@
 <body>
     <div id="app">
         <div class="contain">
+            <div class="modifyconfigure">
+                <el-dialog title="配置" :visible.sync="dialogFormVisible" class="modifyconfigure-alert">
+                    <div style="display: flex;flex-direction: column; align-items: center">
+                        <div style="display: flex;flex-direction: column; align-items: center">
+                            <div>内存大小
+                                <el-slider v-model="mainmemorysize" :min="64" :max="1000" label=""></el-slider>
+                            </div>
+                            <div>驻留集大小
+                                <el-slider v-model="residentset" :min="2" :max="10" :step="1" label="" width="1000"></el-slider>
+                            </div>
+                            <div>置换策略
+                                <br>
+                                <!-- <input type="radio" name="radio" value="1" >FIFO
+                                <input type="radio" name="radio" value="2">LRU -->
+                                    <label>FIFO
+                                        <input type="radio" v-model="switchalgorithm" value="1" />
+                                    </label>
+                                    <br>
+                                    <label>LRU
+                                        <input type="radio" v-model="switchalgorithm" value="2" />
+                                    </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisible = false">取 消</el-button>
+                        <el-button type="primary" @click="dialogFormVisible = false">确 定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
             <div class="contain-up">
                 <div class="menu">
                     <div class="selectedmenu">
-                        <el-tabs v-model="activeName" @tab-click="">
+                        <el-tabs  @tab-click="">
                             <el-tabs type="border-card">
                                 <el-tab-pane label="创建进程">
                                     <div class="mylabel">创建进程</div>
@@ -48,13 +78,13 @@
                                 </el-tab-pane>
                                 <el-tab-pane label="查找">
                                     <el-input placeholder="请输入内容" v-model="searchprocessid">
-                                        <template slot="prepend">进程ID</template>
+                                        <template slot="prepend" style="width: 10% ;">进程ID</template>
                                     </el-input>
                                     <el-input placeholder="请输入内容" v-model="searchprocesssegment">
                                         <template slot="prepend">&nbsp;段&nbsp;号&nbsp;&nbsp;</template>
                                     </el-input>
                                     <el-input placeholder="请输入内容" v-model="searchprocessspage">
-                                        <template slot="prepend">offset</template>
+                                        <template slot="prepend">段内偏移量</template>
                                     </el-input>
                                     <el-button round style="margin-left: 20%;margin-top: 10%;font-size: 30px;width: 60% ;" @click="locatapage">查找</el-button>
                                 </el-tab-pane>
@@ -193,6 +223,7 @@
                 searchprocessid:0,
                 searchprocesssegment:0,
                 searchprocessspage:0,
+                dialogFormVisible :true,
         }
         },
         mounted:function(){
@@ -233,6 +264,7 @@
                 if(needpage>this.usablepagenum){
                     // 页面置换         
                     if(this.switchalgorithm==1){
+                        
                         this.fifo(needpage - this.usablepagenum)
                     }
                     else{
